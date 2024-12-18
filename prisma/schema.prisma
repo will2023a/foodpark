@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id             Int       @id @default(autoincrement())
+  cpf            String    @unique
+  nome           String
+  dataNascimento DateTime
+  grupo          Grupo     @default(BRONZE)
+  criadoEm       DateTime  @default(now())
+  pedidos        Pedido[]
+}
+
+model Restaurante {
+  id             Int       @id @default(autoincrement())
+  nomeRestaurante String
+  cnpj           String    @unique
+  promocao       Boolean   @default(false)
+  criadoEm       DateTime  @default(now())
+  admins         UserAdmin[]
+  cardapio       Cardapio[]
+  pedidos        Pedido[]
+}
+
+model UserAdmin {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  senha          String
+  role           Role
+  restauranteId  Int?      // Campo opcional, necessário para Super Admin
+  restaurante    Restaurante? @relation(fields: [restauranteId], references: [id])
+  criadoEm       DateTime  @default(now())
+}
+
+model Pedido {
+  id             Int       @id @default(autoincrement())
+  clienteId      Int
+  cliente        Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  restauranteId  Int
+  restaurante    Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  status         PedidoStatus @default(PENDENTE)
+  criadoEm       DateTime    @default(now())
+}
+
+model Cardapio {
+  id             Int       @id @default(autoincrement())
+  restauranteId  Int
+  restaurante    Restaurante @relation(fields: [restauranteId], references: [id], onDelete: Cascade)
+  nomeProduto    String
+  preco          Float
+  disponivel     Boolean   @default(true)
+}
+
+enum Role {
+  SUPER_ADMIN        // Pode gerenciar tudo no sistema
+  ADMIN_RESTAURANTE  // Gerencia apenas o restaurante
+}
+
+enum PedidoStatus {
+  PENDENTE
+  PREPARANDO
+  ENTREGUE
+}
+
+enum Grupo {
+  BRONZE // Clientes padrão com benefícios básicos
+  PRATA  // Clientes com mais vantagens
+  OURO   // Clientes premium
+}
